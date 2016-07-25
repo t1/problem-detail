@@ -4,7 +4,7 @@
 
     <groupId>com.github.t1</groupId>
     <artifactId>problem-detail</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -16,7 +16,7 @@
     </prerequisites>
     <scm>
         <developerConnection>scm:git:https://github.com/t1/problem-detail</developerConnection>
-        <tag>problem-detail-1.0.1</tag>
+        <tag>HEAD</tag>
     </scm>
     <licenses>
         <license>
