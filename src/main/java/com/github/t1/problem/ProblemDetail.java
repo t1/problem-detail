@@ -1,9 +1,10 @@
 package com.github.t1.problem;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.json.*;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.*;
 import javax.xml.bind.annotation.*;
 import java.io.StringReader;
@@ -19,6 +20,7 @@ import static lombok.AccessLevel.*;
  *
  * @see <a href="https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-01">IETF: Problem Details for HTTP APIs</a>
  */
+@Slf4j
 @Value
 @Builder
 @XmlRootElement
@@ -81,6 +83,12 @@ public class ProblemDetail {
     @XmlElement
     private URI instance;
 
+    /**
+     * The cause object for this problem. This is not defined in the problem spec.
+     */
+    @XmlElement
+    ProblemDetail cause;
+
 
     public StatusType getStatusType() { return (status == null) ? null : Status.fromStatusCode(status); }
 
@@ -104,34 +112,59 @@ public class ProblemDetail {
         }
     }
 
-    @Override public String toString() {
-        StringBuilder out = new StringBuilder();
-        append(out, "type", type);
-        append(out, "title", title);
-        append(out, "status", status);
-        append(out, "detail", detail);
-        append(out, "instance", instance);
-        return out.toString();
-    }
 
-    private void append(StringBuilder out, String title, Object field) {
-        if (field != null)
-            out.append(title).append(": ").append(field).append("\n");
+    public static ProblemDetail from(Response response) {
+        try {
+            return ProblemDetail.fromJson(response.readEntity(String.class));
+        } catch (RuntimeException e) {
+            log.debug("can't read problem detail body", e);
+            return null;
+        }
     }
 
     public static ProblemDetail fromJson(String string) {
-        ProblemDetailBuilder problem = builder();
         JsonObject json = Json.createReader(new StringReader(string)).readObject();
+        return fromJson(json);
+    }
+
+    private static ProblemDetail fromJson(JsonObject json) {
+        ProblemDetailBuilder problem = builder();
         problem.set(json, "type", problem::type, URI::create);
         problem.set(json, "title", problem::title);
         if (has(json, "status"))
             problem.status(json.getInt("status"));
         problem.set(json, "detail", problem::detail);
         problem.set(json, "instance", problem::instance, URI::create);
+        if (has(json, "cause"))
+            problem.cause(fromJson(json.getJsonObject("cause")));
         return problem.build();
     }
 
     private static boolean has(JsonObject json, String field) {
         return json.containsKey(field) && !json.isNull(field);
+    }
+
+
+    @Override public String toString() {
+        StringBuilder out = new StringBuilder();
+        toString("", out);
+        return out.toString();
+    }
+
+    private void toString(String indent, StringBuilder out) {
+        append(out, indent, "type", type);
+        append(out, indent, "title", title);
+        append(out, indent, "status", status);
+        append(out, indent, "detail", detail);
+        append(out, indent, "instance", instance);
+        if (cause != null) {
+            out.append(indent).append("cause:\n");
+            cause.toString(indent + "  ", out);
+        }
+    }
+
+    private void append(StringBuilder out, String indent, String title, Object field) {
+        if (field != null)
+            out.append(indent).append(title).append(": ").append(field).append("\n");
     }
 }

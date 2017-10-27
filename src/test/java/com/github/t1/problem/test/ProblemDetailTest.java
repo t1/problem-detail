@@ -13,13 +13,12 @@ import static com.github.t1.problem.ProblemDetail.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.assertj.core.api.Assertions.*;
 
-@DisplayName("A ProblemDetail")
 class ProblemDetailTest {
     private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
     private static final String XML_PATTERN = XML.replace("?", "\\?");
 
     @Nested
-    @DisplayName("when empty")
+    @DisplayName("An empty ProblemDetail")
     class WhenEmpty {
         private ProblemDetail emptyDetail;
 
@@ -35,6 +34,8 @@ class ProblemDetailTest {
 
         @Test void hasDetailNull() { assertThat(emptyDetail.getDetail()).isNull(); }
 
+        @Test void hasCauseNull() { assertThat(emptyDetail.getCause()).isNull(); }
+
         @Test void hasInstance() { assertThat(emptyDetail).has(instance()); }
 
         @Test void fromJson() { assertThat(ProblemDetail.fromJson("{}")).is(equalIgnoringInstance(emptyDetail)); }
@@ -46,7 +47,8 @@ class ProblemDetailTest {
                     + "\"title\":null,"
                     + "\"status\":null,"
                     + "\"detail\":null,"
-                    + "\"instance\":null"
+                    + "\"instance\":null,"
+                    + "\"cause\":null"
                     + "}")).is(equalIgnoringInstance(emptyDetail));
         }
 
@@ -62,7 +64,7 @@ class ProblemDetailTest {
 
 
     @Nested
-    @DisplayName("when full")
+    @DisplayName("A full ProblemDetail")
     class WhenFull {
         private static final String FULL_DETAIL_JSON = ""
                 + "{"
@@ -70,14 +72,20 @@ class ProblemDetailTest {
                 + "\"title\":\"foo-title\","
                 + "\"status\":409,"
                 + "\"detail\":\"foo-detail\","
-                + "\"instance\":\"foo-instance\""
+                + "\"instance\":\"foo-instance\","
+                + "\"cause\":{\"title\":\"cause-title\",\"instance\":\"cause-instance\"}"
                 + "}";
         private static final String FULL_DETAIL_XML = XML + ""
                 + "<problemDetail>\n"
                 + "    <type>urn:problem:foo-type</type>\n"
                 + "    <title>foo-title</title>\n"
-                + "    <detail>foo-detail</detail>\n"
                 + "    <status>409</status>\n"
+                + "    <detail>foo-detail</detail>\n"
+                + "    <instance>foo-instance</instance>\n"
+                + "    <cause>\n"
+                + "        <title>cause-title</title>\n"
+                + "        <instance>cause-instance</instance>\n"
+                + "    </cause>\n"
                 + "</problemDetail>\n";
         private ProblemDetail fullDetail;
 
@@ -89,6 +97,7 @@ class ProblemDetailTest {
                     .status(CONFLICT)
                     .detail("foo-detail")
                     .instance(URI.create("foo-instance"))
+                    .cause(ProblemDetail.builder().title("cause-title").instance(URI.create("cause-instance")).build())
                     .build();
         }
 
@@ -98,7 +107,10 @@ class ProblemDetailTest {
                     + "title: foo-title\n"
                     + "status: 409\n"
                     + "detail: foo-detail\n"
-                    + "instance: foo-instance\n");
+                    + "instance: foo-instance\n"
+                    + "cause:\n"
+                    + "  title: cause-title\n"
+                    + "  instance: cause-instance\n");
         }
 
         @Test void hasType() { assertThat(fullDetail.getType()).isEqualTo(URI.create(URN_PROBLEM_PREFIX + "foo-type"));}
@@ -118,16 +130,102 @@ class ProblemDetailTest {
 
         @Test void fromXml() { assertThat(xml(FULL_DETAIL_XML)).is(equalIgnoringInstance(fullDetail)); }
 
-        @Test void toXml() {
-            assertThat(xml(fullDetail)).isEqualTo(XML + ""
-                    + "<problemDetail>\n"
-                    + "    <type>urn:problem:foo-type</type>\n"
-                    + "    <title>foo-title</title>\n"
-                    + "    <status>409</status>\n"
-                    + "    <detail>foo-detail</detail>\n"
-                    + "    <instance>foo-instance</instance>\n"
-                    + "</problemDetail>\n");
+        @Test void toXml() { assertThat(xml(fullDetail)).isEqualTo(FULL_DETAIL_XML); }
+    }
+
+    @Nested
+    @DisplayName("A doubly nested ProblemDetail")
+    class DoublyNested {
+        private static final String DOUBLY_DETAIL_JSON = ""
+                + "{"
+                + "\"type\":\"urn:problem:foo-type\","
+                + "\"title\":\"foo-title\","
+                + "\"status\":409,"
+                + "\"detail\":\"foo-detail\","
+                + "\"instance\":\"foo-instance\","
+                + "\"cause\":{"
+                + /**/"\"title\":\"cause-title\","
+                + /**/"\"instance\":\"cause-instance\","
+                + /**/"\"cause\":{"
+                + /*    */"\"title\":\"doubly-title\","
+                + /*    */"\"instance\":\"doubly-instance\""
+                + /*    */"}"
+                + /**/"}"
+                + "}";
+        private static final String DOUBLY_DETAIL_XML = XML + ""
+                + "<problemDetail>\n"
+                + "    <type>urn:problem:foo-type</type>\n"
+                + "    <title>foo-title</title>\n"
+                + "    <status>409</status>\n"
+                + "    <detail>foo-detail</detail>\n"
+                + "    <instance>foo-instance</instance>\n"
+                + "    <cause>\n"
+                + "        <title>cause-title</title>\n"
+                + "        <instance>cause-instance</instance>\n"
+                + "        <cause>\n"
+                + "            <title>doubly-title</title>\n"
+                + "            <instance>doubly-instance</instance>\n"
+                + "        </cause>\n"
+                + "    </cause>\n"
+                + "</problemDetail>\n";
+        private ProblemDetail doublyDetail;
+
+        @BeforeEach void create() {
+            doublyDetail = ProblemDetail
+                    .builder()
+                    .type(URI.create("urn:problem:foo-type"))
+                    .title("foo-title")
+                    .status(CONFLICT)
+                    .detail("foo-detail")
+                    .instance(URI.create("foo-instance"))
+                    .cause(ProblemDetail
+                            .builder()
+                            .title("cause-title")
+                            .instance(URI.create("cause-instance"))
+                            .cause(ProblemDetail
+                                    .builder()
+                                    .title("doubly-title")
+                                    .instance(URI.create("doubly-instance"))
+                                    .build())
+                            .build())
+                    .build();
         }
+
+        @Test void hasToString() {
+            assertThat(doublyDetail.toString()).isEqualTo(""
+                    + "type: urn:problem:foo-type\n"
+                    + "title: foo-title\n"
+                    + "status: 409\n"
+                    + "detail: foo-detail\n"
+                    + "instance: foo-instance\n"
+                    + "cause:\n"
+                    + "  title: cause-title\n"
+                    + "  instance: cause-instance\n"
+                    + "  cause:\n"
+                    + "    title: doubly-title\n"
+                    + "    instance: doubly-instance\n");
+        }
+
+        @Test void hasType() {
+            assertThat(doublyDetail.getType()).isEqualTo(URI.create(URN_PROBLEM_PREFIX + "foo-type"));
+        }
+
+        @Test void hasTitle() { assertThat(doublyDetail.getTitle()).isEqualTo("foo-title"); }
+
+        @Test void hasStatus() {
+            assertThat(doublyDetail.getStatus()).isEqualTo(CONFLICT.getStatusCode());
+            assertThat(doublyDetail.getStatusType()).isEqualTo(CONFLICT);
+        }
+
+        @Test void hasDetail() { assertThat(doublyDetail.getDetail()).isEqualTo("foo-detail"); }
+
+        @Test void hasInstance() { assertThat(doublyDetail.getInstance()).isEqualTo(URI.create("foo-instance")); }
+
+        @Test void fromJson() { assertThat(ProblemDetail.fromJson(DOUBLY_DETAIL_JSON)).isEqualTo(doublyDetail); }
+
+        @Test void fromXml() { assertThat(xml(DOUBLY_DETAIL_XML)).is(equalIgnoringInstance(doublyDetail)); }
+
+        @Test void toXml() { assertThat(xml(doublyDetail)).isEqualTo(DOUBLY_DETAIL_XML); }
     }
 
     private Condition<? super ProblemDetail> equalIgnoringInstance(ProblemDetail expected) {

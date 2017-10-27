@@ -1,19 +1,21 @@
 package com.github.t1.problem;
 
-import com.github.t1.problem.ProblemDetail.ProblemDetailBuilder;
-import lombok.*;
+import com.github.t1.problem.ProblemDetail.*;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
 import java.net.URI;
 
 import static com.github.t1.problem.ProblemDetail.*;
-import static com.github.t1.problem.WebException.builderFor;
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static com.github.t1.problem.WebException.*;
+import static javax.ws.rs.core.Response.Status.*;
 import static javax.ws.rs.core.Response.Status.Family.*;
 
 /** @see WebException */
+@Slf4j
 public class WebExceptionBuilder {
     private static final String EXCEPTION = "Exception";
 
@@ -71,6 +73,8 @@ public class WebExceptionBuilder {
     }
 
     public WebExceptionBuilder causedBy(@NonNull Throwable cause) {
+        if (cause instanceof WebApplicationException)
+            entity.cause(ProblemDetail.from(((WebApplicationException) cause).getResponse()));
         this.cause = cause;
         return this;
     }
@@ -83,7 +87,7 @@ public class WebExceptionBuilder {
                 : new WebApplicationApplicationException(detail.toString(), response, cause);
     }
 
-    public ProblemDetail buildEntity() {return entity.build();}
+    ProblemDetail buildEntity() { return entity.build(); }
 
     private boolean isServerError() { return status.getFamily() == SERVER_ERROR; }
 
