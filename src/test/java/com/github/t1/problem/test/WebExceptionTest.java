@@ -1,19 +1,20 @@
-package com.github.t1.problem;
+package com.github.t1.problem.test;
 
+import com.github.t1.problem.*;
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response.Status;
 import java.net.URI;
 
-import static com.github.t1.problem.ProblemDetail.*;
+import static com.github.t1.problem.ProblemDetail.APPLICATION_PROBLEM_JSON_TYPE;
 import static javax.ws.rs.core.Response.Status.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class WebExceptionTest {
-    private Condition<Throwable> status(Status status) {
+@DisplayName("A WebException")
+class WebExceptionTest {
+    private Condition<Throwable> status(Response.Status status) {
         return new Condition<>(exception -> status.equals(response(exception).getStatusInfo()), "status %s", status);
     }
 
@@ -28,8 +29,7 @@ public class WebExceptionTest {
         return ((ProblemDetail) response(exception).getEntity()).getInstance();
     }
 
-    @Test
-    public void shouldBuildSimpleBadRequest() throws Exception {
+    @Test void shouldBuildSimpleBadRequest() {
         WebException exception = WebException.badRequest("foo");
 
         assertThat(exception)
@@ -42,8 +42,7 @@ public class WebExceptionTest {
                 .has(contentType(APPLICATION_PROBLEM_JSON_TYPE));
     }
 
-    @Test
-    public void shouldBuildFull() throws Exception {
+    @Test void shouldBuildFull() {
         WebException exception = WebException
                 .builderFor(CONFLICT)
                 .type(URI.create("urn:problem:failed.status.check"))
@@ -65,14 +64,13 @@ public class WebExceptionTest {
     }
 
     @ReturnStatus(FORBIDDEN)
-    public static class YouDidItWrongException extends WebApplicationApplicationException {
-        public YouDidItWrongException(String message) {
+    private static class YouDidItWrongException extends WebApplicationApplicationException {
+        private YouDidItWrongException(String message) {
             super(message);
         }
     }
 
-    @Test
-    public void shouldBuildFromSubException() throws Exception {
+    @Test void shouldBuildFromSubException() {
         String message = "Next time, you'll do better";
         YouDidItWrongException exception = new YouDidItWrongException(message);
 

@@ -48,6 +48,8 @@ public class WebException extends WebApplicationException {
 
     public static WebException badRequest(String detail) { return builderFor(BAD_REQUEST).detail(detail).build(); }
 
+    public static WebException badGateway(String detail) { return builderFor(BAD_GATEWAY).detail(detail).build(); }
+
     public static WebException notFound(String detail) { return builderFor(NOT_FOUND).detail(detail).build(); }
 
     public static WebExceptionBuilder builderFor(Status status) { return new WebExceptionBuilder(status); }
