@@ -2,16 +2,21 @@ package com.github.t1.problem.test;
 
 import com.github.t1.problem.ProblemDetail;
 import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXB;
-import java.io.*;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.util.Objects;
 
-import static com.github.t1.problem.ProblemDetail.*;
-import static javax.ws.rs.core.Response.Status.*;
-import static org.assertj.core.api.Assertions.*;
+import static com.github.t1.problem.ProblemDetail.URN_PROBLEM_INSTANCE_PREFIX;
+import static com.github.t1.problem.ProblemDetail.URN_PROBLEM_PREFIX;
+import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ProblemDetailTest {
     private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
