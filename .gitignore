@@ -1,2 +1,3 @@
-target
-problem-detail.iml
+/.idea/
+/*.iml
+/target/
